@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Manage All Queues</h2>
+
+<section>
+    <h3>Add Participant</h3>
+    <form method="POST" action="{{ url_for('main.add_participant') }}" style="display: flex; gap: 20px; align-items: flex-end;">
+        <div>
+            <label for="username">Username:</label><br>
+            <input type="text" id="username" name="username" required>
+        </div>
+        <div>
+            <label for="content">Content:</label><br>
+            <select id="content" name="content">
+                {% for option in content_options %}
+                <option value="{{ option.name }}">{{ option.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label for="comment">Comment:</label><br>
+            <input type="text" id="comment" name="comment">
+        </div>
+        <div>
+            <label for="queue_id">Queue:</label><br>
+            <select id="queue_id" name="queue_id" required>
+                {% for queue in queues %}
+                <option value="{{ queue.id }}">{{ queue.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <button type="submit">Add Participant</button>
+        </div>
+    </form>
+</section>
+
+<section style="display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 20px;">
+    {% for queue in queues %}
+    <div style="border: 1px solid #ccc; padding: 15px; box-sizing: border-box; min-height: 250px;">
+        <h3>{{ queue.name }} (Priority: {{ queue.priority }})</h3>
+        <table class="droppable-table" data-queue-id="{{ queue.id }}"
+               ondragover="allowDrop(event)"
+               ondragenter="highlightDropZone(event)"
+               ondragleave="removeHighlight(event)"
+               ondrop="drop(event)">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Status</th>
+                    <th>Content</th>
+                    <th>Comment</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in queue.entries %}
+                <tr draggable="true" ondragstart="drag(event)" id="participant-{{ entry.id }}" data-participant-id="{{ entry.id }}">
+                    <td>{{ entry.username }}</td>
+                    <td>
+                        <button onclick="toggleStatus({{ entry.id }}, this)">{{ entry.status }}</button>
+                    </td>
+                    <td>{{ entry.content or "—" }}</td>
+                    <td>{{ entry.comment or "—" }}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('main.delete_participant', participant_id=entry.id) }}" style="display:inline;">
+                            <button type="submit">Delete</button>
+                        </form>
+                        <a href="{{ url_for('main.edit_participant', participant_id=entry.id) }}">Edit</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endfor %}
+</section>
+
+<h3>Guest Access Link</h3>
+<p>Share this link to let guests view your queues:</p>
+<a href="{{ url_for('main.public_all', user_id=current_user.id) }}" id="guest-view-link" onclick="copyGuestViewLink()">http://127.0.0.1:5000/public_all/{{ current_user.id }}</a>
+
+<script>
+    function copyGuestViewLink() {
+        const linkElement = document.getElementById("guest-view-link");
+        const textToCopy = linkElement.href;
+
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            alert("Guest view link copied to clipboard!");
+        }).catch(err => {
+            console.error("Failed to copy link: ", err);
+        });
+    }
+</script>
+
+
+<script>
+    let draggedElement = null;
+    let placeholder = document.createElement("tr");
+    placeholder.style.backgroundColor = "#f0f8ff"; // Подсветка вставки
+    placeholder.style.height = "50px";
+
+    function drag(event) {
+        draggedElement = event.target; // Элемент, который перетаскивается
+        event.dataTransfer.setData("text/plain", event.target.id);
+    }
+
+    function allowDrop(event) {
+        event.preventDefault(); // Разрешаем сброс
+    }
+
+    function highlightDropZone(event) {
+        event.preventDefault();
+
+        const row = event.target.closest("tr");
+        const tableBody = event.target.closest("tbody");
+
+        if (row && row !== placeholder && row !== draggedElement) {
+            row.parentNode.insertBefore(placeholder, row.nextSibling); // Показываем, куда вставится элемент
+        } else if (tableBody && !placeholder.parentNode) {
+            tableBody.appendChild(placeholder);
+        }
+    }
+
+    function removeHighlight(event) {
+        const tableBody = event.target.closest("tbody");
+        if (tableBody) {
+            tableBody.removeChild(placeholder); // Убираем подсветку
+        }
+    }
+
+    function drop(event) {
+        event.preventDefault();
+
+        const table = event.target.closest(".droppable-table");
+        if (!table) return;
+
+        const queueId = table.dataset.queueId;
+        const participantId = draggedElement.dataset.participantId;
+
+        // Вставляем элемент в новое место
+        if (placeholder.parentNode) {
+            placeholder.parentNode.insertBefore(draggedElement, placeholder.nextSibling);
+            placeholder.remove();
+        }
+
+        // Обновляем порядок участников на сервере
+        const order = Array.from(table.querySelectorAll("tr"))
+            .filter(row => row.dataset.participantId)
+            .map(row => row.dataset.participantId);
+
+        fetch(`/update_participant_queue/${participantId}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ queue_id: queueId, order: order })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log("Participant order updated successfully!");
+            } else {
+                console.error("Failed to update participant order.");
+            }
+        })
+        .catch(error => console.error("Error:", error));
+    }
+</script>
+
+<script>
+    function toggleStatus(participantId, button) {
+        fetch(`/toggle_status/${participantId}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        })
+        .then((response) => response.json())
+        .then((data) => {
+            if (data.success) {
+                button.textContent = data.new_status; // Обновляем текст кнопки
+            } else {
+                console.error("Failed to update status.");
+            }
+        })
+        .catch((error) => console.error("Error:", error));
+    }
+</script>
+
+<a href="{{ url_for('main.dashboard') }}">Back to Dashboard</a>
+
+<h3>Available Content Options</h3>
+<button onclick="toggleContentTable()">Toggle Table</button>
+<table id="contentTable" style="display:none;">
+    <thead>
+        <tr>
+            <th>Content Name</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for option in content_options %}
+        <tr>
+            <td>{{ option.name }}</td>
+            <td>
+                <form method="POST" action="{{ url_for('main.delete_content_option', content_id=option.id) }}" style="display:inline;">
+                    <button type="submit">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+    function toggleContentTable() {
+        const table = document.getElementById('contentTable');
+        table.style.display = (table.style.display === 'none') ? 'table' : 'none';
+    }
+</script>
+{% endblock %}

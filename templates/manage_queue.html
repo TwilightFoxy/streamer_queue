@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Manage Queue: {{ queue.name }}</h2>
+
+<!-- Форма для редактирования данных очереди -->
+<form method="POST">
+    <label for="name">Queue Name:</label><br>
+    <input type="text" id="name" name="name" value="{{ queue.name }}" required><br><br>
+
+    <label for="priority">Priority:</label><br>
+    <input type="number" id="priority" name="priority" value="{{ queue.priority }}" required><br><br>
+
+    <button type="submit">Update Queue</button>
+</form>
+
+<h3>Participants</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Username</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for entry in queue.entries %}
+        <tr>
+            <td>{{ entry.username }}</td>
+            <td>{{ entry.status }}</td>
+            <td>
+                <a href="#">Edit</a>
+                <a href="#">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a href="{{ url_for('main.dashboard') }}">Back to Dashboard</a>
+{% endblock %}
+

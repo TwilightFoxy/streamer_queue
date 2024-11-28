@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Public View: Queues for {{ user.username }}</h2>
+
+<section style="display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 20px;">
+    {% for queue in queues %}
+    <div style="border: 1px solid #ccc; padding: 15px; box-sizing: border-box; min-height: 250px;">
+        <h3>{{ queue.name }} (Priority: {{ queue.priority }})</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Status</th>
+                    <th>Content</th>
+                    <th>Comment</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in queue.entries %}
+                <tr>
+                    <td>{{ entry.username }}</td>
+                    <td>{{ entry.status }}</td>
+                    <td>{{ entry.content or "—" }}</td>
+                    <td>{{ entry.comment or "—" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endfor %}
+</section>
+
+<a href="{{ url_for('main.index') }}">Back to Home</a>
+{% endblock %}

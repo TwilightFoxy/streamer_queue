@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Edit Participant: {{ participant.username }}</h2>
+
+<form method="POST">
+    <label for="username">Username:</label><br>
+    <input type="text" id="username" name="username" value="{{ participant.username }}" required><br><br>
+
+    <label for="status">Status:</label><br>
+    <input type="text" id="status" name="status" value="{{ participant.status }}" required><br><br>
+
+    <label for="content">Content:</label><br>
+    <input type="text" id="content" name="content" value="{{ participant.content }}"><br><br>
+
+    <label for="comment">Comment:</label><br>
+    <input type="text" id="comment" name="comment" value="{{ participant.comment }}"><br><br>
+
+    <button type="submit">Update Participant</button>
+</form>
+
+<a href="{{ url_for('main.manage_all_queues') }}">Back to All Queues</a>
+{% endblock %}

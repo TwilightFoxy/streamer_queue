@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Dashboard</h2>
+<p>Welcome, {{ current_user.username }}!</p>
+
+<h3>Your Queues</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Priority</th>
+            <th>Participants</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        <a href="{{ url_for('main.manage_all_queues') }}">Manage All Queues</a>
+        {% for queue in queues %}
+        <tr>
+            <td>{{ queue.name }}</td>
+            <td>{{ queue.priority }}</td>
+            <td>{{ queue.entries|length }}</td>
+            <td>
+                <a href="{{ url_for('main.manage_queue', queue_id=queue.id) }}">Open</a>
+                <a href="{{ url_for('main.delete_queue', queue_id=queue.id) }}">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a href="{{ url_for('main.create_queue') }}">+ Create Queue</a>
+<a href="{{ url_for('main.logout') }}" style="color: red;">Logout</a>
+{% endblock %}

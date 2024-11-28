@@ -1,0 +1,8 @@
+.droppable-table.drop-highlight {
+    border: 2px dashed #007BFF; /* Синий пунктирный бордер */
+    background-color: #f0f8ff; /* Лёгкий голубой фон */
+}
+.drop-highlight {
+    border: 2px dashed #00f; /* Синяя граница для подсветки */
+    background-color: rgba(0, 0, 255, 0.1); /* Лёгкая голубая заливка */
+}
